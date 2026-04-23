@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Generador de constancias</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
+    <script src="./vendor/jspdf.umd.min.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <section class="panel">
+        <h1>Generador de constancias</h1>
+        <p class="hint">
+          Completá el formulario y descargá la constancia en PDF.
+        </p>
+
+        <form id="certificateForm">
+          <div class="grid">
+            <label>
+              Nombre completo
+              <input name="fullName" type="text" required />
+            </label>
+
+            <label>
+              Email
+              <input name="email" type="email" required />
+            </label>
+
+            <label>
+              Género del estudiante
+              <select name="gender" required>
+                <option value="masculino">Masculino</option>
+                <option value="femenino">Femenino</option>
+              </select>
+            </label>
+
+            <label>
+              Tipo de identificación
+              <select name="idType" required>
+                <option value="DNI">DNI</option>
+                <option value="Cédula">Cédula</option>
+                <option value="RUT">RUT</option>
+              </select>
+            </label>
+
+            <label>
+              Número de identificación
+              <input name="idNumber" type="text" required />
+            </label>
+
+            <label>
+              Fecha de emisión
+              <input name="issueDate" type="date" required />
+            </label>
+
+            <label>
+              Tipo de inscripción
+              <select name="programType" id="programType" required>
+                <option value="curso">Curso</option>
+                <option value="carrera">Carrera</option>
+                <option value="diplomatura">Diplomatura</option>
+                <option value="workshop">Workshop</option>
+              </select>
+            </label>
+
+            <label>
+              Nombre del curso/carrera/diplomatura/workshop
+              <input name="programName" type="text" required />
+            </label>
+
+            <label>
+              Fecha de inicio
+              <input name="startDate" type="date" required />
+            </label>
+
+            <label>
+              Fecha de finalización
+              <input name="endDate" type="date" required />
+            </label>
+
+            <fieldset id="classDaysWrapper" class="checkbox-group">
+              <legend>Día de cursada</legend>
+              <label><input type="checkbox" name="classDays" value="Lunes" />Lunes</label>
+              <label><input type="checkbox" name="classDays" value="Martes" />Martes</label>
+              <label><input type="checkbox" name="classDays" value="Miércoles" />Miércoles</label>
+              <label><input type="checkbox" name="classDays" value="Jueves" />Jueves</label>
+              <label><input type="checkbox" name="classDays" value="Viernes" />Viernes</label>
+              <label><input type="checkbox" name="classDays" value="Sábado" />Sábado</label>
+              <label><input type="checkbox" name="classDays" value="Domingo" />Domingo</label>
+            </fieldset>
+
+            <label>
+              Horario de inicio
+              <input name="classStartTime" type="time" step="1800" required />
+            </label>
+
+            <label>
+              Horario de fin
+              <input name="classEndTime" type="time" step="1800" required />
+            </label>
+          </div>
+
+          <button type="submit">Generar PDF</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Vista previa del texto</h2>
+        <pre id="preview"></pre>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
