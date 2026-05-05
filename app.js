@@ -7,18 +7,25 @@ const classDaysInputs = Array.from(
 );
 
 const COMPANY_CONFIG = {
-  companyName: "EMPRESA_PLACEHOLDER",
+  companyName: "CODERHOUSE",
   directorName: "Nombre y apellido del Director",
-  websiteUrl: "https://www.empresa-placeholder.com",
-  addressLine: "Direccion de empresa placeholder 123, Buenos Aires, Argentina",
-  logoPath: "./banner-argentina.png",
+  websiteUrl: "https://coderhouse.com/online",
+  addressLine: "El Salvador 5218, Ciudad Autónoma de Buenos Aires",
+  footerText:
+    "CODERHOUSE, El Salvador 5218, Ciudad Autónoma de Buenos Aires, coderhouse.com/online",
+  logoPath: "./logo-coderhouse-white.png",
   signaturePath: "",
   pdfLayout: {
     marginX: 52,
-    bannerHeight: 100,
+    bannerHeight: 88,
     bannerWidthRatio: 0.75,
+    dateBelowLogo: 24,
+    bodyBelowDate: 34,
+    gapBodyToSignature: 56,
     signatureWidth: 180,
     signatureHeight: 28,
+    directorBelowSignature: 44,
+    footerBelowDirector: 38,
   },
 };
 
@@ -103,22 +110,24 @@ function isActiveEnrollment(issueDate, endDate) {
   return end >= issue;
 }
 
-function buildCertificateText(data) {
+function buildIssueLine(data) {
+  return `Buenos Aires, ${formatDate(data.issueDate)}`;
+}
+
+function buildBodyText(data) {
   const studentNoun = getStudentNoun(data.gender);
   const enrolledWord = getEnrolledWord(data.gender);
   const programIntro = getProgramIntro(data.programType, data.programName);
   const daysSentence = getDaysSentence(data.programType, data.classDays);
   const activeEnrollment = isActiveEnrollment(data.issueDate, data.endDate);
 
-  const bodyText = activeEnrollment
+  return activeEnrollment
     ? `Por medio de la presente, se deja constancia de que ${studentNoun} ${data.fullName}, con número de ${data.idType} ${data.idNumber}, se encuentra ${enrolledWord} en ${programIntro}, con fecha de inicio el ${formatDate(data.startDate)} y finalización el ${formatDate(data.endDate)}, ${daysSentence} en el horario de ${formatTimeWithHour(data.classStartTime)} a ${formatTimeWithHour(data.classEndTime)} (hora argentina).`
     : `Por medio de la presente, se deja constancia de que ${studentNoun} ${data.fullName}, con número de ${data.idType} ${data.idNumber}, realizó ${programIntro} con fecha de inicio el ${formatDate(data.startDate)} y finalización el ${formatDate(data.endDate)}, ${daysSentence} en el horario de ${formatTimeWithHour(data.classStartTime)} a ${formatTimeWithHour(data.classEndTime)} (hora argentina).`;
+}
 
-  return [
-    `Buenos Aires, ${formatDate(data.issueDate)}`,
-    "",
-    bodyText,
-  ].join("\n");
+function buildCertificateText(data) {
+  return [buildIssueLine(data), "", buildBodyText(data)].join("\n");
 }
 
 function getFormData() {
@@ -206,42 +215,51 @@ async function generatePdf(data) {
     format: "a4",
   });
 
-  const marginX = COMPANY_CONFIG.pdfLayout.marginX;
+  const layout = COMPANY_CONFIG.pdfLayout;
+  const marginX = layout.marginX;
   const pageWidth = doc.internal.pageSize.getWidth();
-  let y = 40;
+  const logoTopY = 40;
+  let logoBottomY = logoTopY;
 
   try {
     const logoDataUrl = await loadImageDataUrl(COMPANY_CONFIG.logoPath);
-    const bannerWidth = pageWidth * COMPANY_CONFIG.pdfLayout.bannerWidthRatio;
-    const bannerHeight = COMPANY_CONFIG.pdfLayout.bannerHeight;
+    const bannerWidth = pageWidth * layout.bannerWidthRatio;
+    const bannerHeight = layout.bannerHeight;
     const bannerX = (pageWidth - bannerWidth) / 2;
     doc.addImage(
       logoDataUrl,
       getImageFormatFromDataUrl(logoDataUrl),
       bannerX,
-      y,
+      logoTopY,
       bannerWidth,
       bannerHeight,
     );
+    logoBottomY = logoTopY + bannerHeight;
   } catch (err) {
     // Si no carga el logo, seguimos para no bloquear la generacion.
   }
 
-  y += 130;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
+  doc.setTextColor(30, 41, 59);
 
-  const text = buildCertificateText(data);
-  const wrapped = doc.splitTextToSize(text, 495);
+  const issueLine = buildIssueLine(data);
+  const dateY = logoBottomY + layout.dateBelowLogo;
+  doc.text(issueLine, pageWidth - marginX, dateY, { align: "right" });
+
+  const bodyStartY = dateY + layout.bodyBelowDate;
+  const bodyText = buildBodyText(data);
+  const textWidth = pageWidth - marginX * 2;
+  const wrapped = doc.splitTextToSize(bodyText, textWidth);
   const lineHeight = 17;
-  doc.text(wrapped, marginX, y);
+  doc.text(wrapped, marginX, bodyStartY);
 
-  const textBottomY = y + (wrapped.length - 1) * lineHeight;
-  const signatureLineY = Math.min(textBottomY + 44, 690);
-  const signatureWidth = COMPANY_CONFIG.pdfLayout.signatureWidth;
+  const textBottomY = bodyStartY + (wrapped.length - 1) * lineHeight;
+  const signatureLineY = textBottomY + layout.gapBodyToSignature;
+  const signatureWidth = layout.signatureWidth;
   const signatureX = (pageWidth - signatureWidth) / 2;
-  const directorY = signatureLineY + 36;
-  const footerY = 760;
+  const directorY = signatureLineY + layout.directorBelowSignature;
+  const footerY = directorY + layout.footerBelowDirector;
 
   try {
     if (COMPANY_CONFIG.signaturePath) {
@@ -249,10 +267,10 @@ async function generatePdf(data) {
       doc.addImage(
         signatureDataUrl,
         getImageFormatFromDataUrl(signatureDataUrl),
-        pageWidth / 2 - COMPANY_CONFIG.pdfLayout.signatureWidth / 2,
-        signatureLineY - COMPANY_CONFIG.pdfLayout.signatureHeight - 8,
-        COMPANY_CONFIG.pdfLayout.signatureWidth,
-        COMPANY_CONFIG.pdfLayout.signatureHeight,
+        pageWidth / 2 - layout.signatureWidth / 2,
+        signatureLineY - layout.signatureHeight - 8,
+        layout.signatureWidth,
+        layout.signatureHeight,
       );
     } else {
       doc.setDrawColor(150);
@@ -263,20 +281,13 @@ async function generatePdf(data) {
     doc.line(signatureX, signatureLineY, signatureX + signatureWidth, signatureLineY);
   }
 
+  doc.setTextColor(30, 41, 59);
   doc.text(COMPANY_CONFIG.directorName, pageWidth / 2, directorY, {
     align: "center",
   });
-  doc.text(`${COMPANY_CONFIG.companyName}`, pageWidth / 2, footerY, {
+  const footerLines = doc.splitTextToSize(COMPANY_CONFIG.footerText, textWidth);
+  doc.text(footerLines, pageWidth / 2, footerY, {
     align: "center",
-  });
-  doc.text(`${COMPANY_CONFIG.addressLine}`, pageWidth / 2, footerY + 16, {
-    align: "center",
-  });
-  doc.setTextColor(21, 94, 239);
-  const websiteWidth = doc.getTextWidth(COMPANY_CONFIG.websiteUrl);
-  const websiteX = (pageWidth - websiteWidth) / 2;
-  doc.textWithLink(COMPANY_CONFIG.websiteUrl, websiteX, footerY + 32, {
-    url: COMPANY_CONFIG.websiteUrl,
   });
 
   doc.save(`${safeFileName(data.email)}.pdf`);
